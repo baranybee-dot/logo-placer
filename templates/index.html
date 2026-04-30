@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logo Placer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 960px;
+    }
+
+    h1 { font-size: 1.4rem; font-weight: 600; color: #111; margin-bottom: 0.4rem; }
+    .subtitle { font-size: 0.9rem; color: #888; margin-bottom: 2rem; }
+
+    .drop-zone {
+      border: 2px dashed #d0d0d0;
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.over { border-color: #555; background: #fafafa; }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-icon { width: 48px; height: 48px; margin: 0 auto 1rem; color: #bbb; }
+    .drop-zone p { color: #555; font-size: 0.95rem; }
+    .drop-zone span { font-size: 0.82rem; color: #aaa; display: block; margin-top: 0.3rem; }
+
+    .logo-preview {
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #f8f8f8;
+      border-radius: 10px;
+    }
+    .logo-preview img {
+      width: 60px; height: 60px; object-fit: contain; border-radius: 6px;
+      background: repeating-conic-gradient(#e0e0e0 0% 25%, white 0% 50%) 0 0 / 12px 12px;
+    }
+    .logo-preview .name { font-size: 0.9rem; color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .spinner-wrap {
+      display: none; flex-direction: column; align-items: center;
+      gap: 0.75rem; padding: 2.5rem 0;
+    }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid #e0e0e0;
+      border-top-color: #333; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .spinner-wrap p { font-size: 0.9rem; color: #666; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Three-column results grid */
+    .results-grid {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .result-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .result-card .result-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    .result-card img {
+      width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      display: block;
+    }
+
+    .btn-download {
+      display: block;
+      padding: 0.6rem;
+      background: #111;
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .btn-download:hover { background: #333; }
+
+    .result-footer {
+      display: none;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+
+    .btn-reset {
+      padding: 0.7rem 1.4rem;
+      background: transparent;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #555;
+      transition: border-color 0.15s;
+    }
+    .btn-reset:hover { border-color: #999; }
+
+    .error-msg {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: #fff0f0;
+      border: 1px solid #fcc;
+      border-radius: 8px;
+      color: #c00;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Logo Placer</h1>
+  <p class="subtitle">Upload a logo — background is removed automatically and placed on the product image in three sizes.</p>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <p><strong>Drop your logo here</strong> or click to browse</p>
+    <span>PNG · JPG · WebP · SVG</span>
+  </div>
+
+  <div class="logo-preview" id="logoPreview">
+    <img id="previewThumb" src="" alt="">
+    <span class="name" id="previewName"></span>
+  </div>
+
+  <div class="spinner-wrap" id="spinner">
+    <div class="spinner"></div>
+    <p>Removing background &amp; compositing…</p>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results-grid" id="resultsGrid">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="result-footer" id="resultFooter">
+    <button class="btn-reset" id="btnReset">Upload new logo</button>
+  </div>
+</div>
+
+<script>
+  const dropZone     = document.getElementById('dropZone');
+  const fileInput    = document.getElementById('fileInput');
+  const logoPreview  = document.getElementById('logoPreview');
+  const previewThumb = document.getElementById('previewThumb');
+  const previewName  = document.getElementById('previewName');
+  const spinner      = document.getElementById('spinner');
+  const resultsGrid  = document.getElementById('resultsGrid');
+  const resultFooter = document.getElementById('resultFooter');
+  const errorMsg     = document.getElementById('errorMsg');
+  const btnReset     = document.getElementById('btnReset');
+
+  let selectedFile = null;
+
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) selectFile(fileInput.files[0]); });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('over');
+    if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+  });
+
+  function selectFile(file) {
+    selectedFile = file;
+    previewThumb.src = URL.createObjectURL(file);
+    previewName.textContent = file.name;
+    logoPreview.style.display = 'flex';
+    resultsGrid.style.display = 'none';
+    resultFooter.style.display = 'none';
+    errorMsg.style.display = 'none';
+    processFile();
+  }
+
+  async function processFile() {
+    if (!selectedFile) return;
+    const formData = new FormData();
+    formData.append('logo', selectedFile);
+
+    spinner.style.display = 'flex';
+    resultsGrid.style.display = 'none';
+    resultFooter.style.display = 'none';
+    errorMsg.style.display = 'none';
+
+    try {
+      const res = await fetch('/process', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
+
+      resultsGrid.innerHTML = '';
+      data.images.forEach(({ label, filename, data: b64 }) => {
+        const src = `data:image/jpeg;base64,${b64}`;
+        const col = document.createElement('div');
+        col.className = 'result-card';
+        col.innerHTML = `
+          <div class="result-label">${label}</div>
+          <img src="${src}" alt="${label}">
+          <a class="btn-download" href="${src}" download="${filename}">Download</a>
+        `;
+        resultsGrid.appendChild(col);
+      });
+
+      resultsGrid.style.display = 'grid';
+      resultFooter.style.display = 'flex';
+    } catch (err) {
+      errorMsg.textContent = 'Error: ' + err.message;
+      errorMsg.style.display = 'block';
+    } finally {
+      spinner.style.display = 'none';
+    }
+  }
+
+  btnReset.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    logoPreview.style.display = 'none';
+    resultsGrid.style.display = 'none';
+    resultFooter.style.display = 'none';
+    errorMsg.style.display = 'none';
+    resultsGrid.innerHTML = '';
+  });
+</script>
+</body>
+</html>

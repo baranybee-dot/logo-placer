@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/
+*.pyc
+
+# rembg / model cache (downloaded at runtime, not source code)
+~/.u2net/
+
+# macOS
+.DS_Store
+
+# uploaded/generated images (runtime artefacts)
+static/uploads/
