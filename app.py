@@ -222,6 +222,11 @@ def composite(logo_nobg, size_factor):
     return base64.b64encode(buf.getvalue()).decode()
 
 
+@app.route("/health")
+def health():
+    return "ok", 200
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
