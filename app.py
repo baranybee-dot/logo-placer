@@ -252,8 +252,10 @@ def process():
 
 
 if __name__ == "__main__":
+    import os
     print("Detecting placements …")
     for p in get_placements():
         print(f"  {p['color']:5s}  cx={p['cx']:.0f} cy={p['cy']:.0f}  "
               f"{p['width']:.0f}×{p['height']:.0f}  angle={p['angle']:.1f}°")
-    app.run(debug=True, port=5001, use_reloader=False)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host="0.0.0.0", port=port)
